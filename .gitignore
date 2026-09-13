@@ -1,0 +1,23 @@
+# Entornos virtuales
+my_entorno/
+venv/
+env/
+
+# Bases de datos y dumps
+db.sqlite3
+dump.rdb
+
+# Archivos subidos por usuarios y procesados
+media/
+
+# Cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de entorno (Crea uno localmente)
+.env
+
+# Configuraciones de IDEs
+.vscode/
+.idea/

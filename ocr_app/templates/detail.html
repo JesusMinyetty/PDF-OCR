@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Detalle del Documento{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
+                <h4 class="mb-0 fw-bold text-truncate me-2">{{ document.original_pdf.name|cut:"pdfs/" }}</h4>
+                {% if document.status == 'completed' %}
+                    <span class="badge bg-success p-2 fs-6">Listo</span>
+                {% elif document.status == 'processing' %}
+                    <span class="badge bg-warning text-dark p-2 fs-6">
+                        <span class="spinner-border spinner-border-sm"></span> Procesando...
+                    </span>
+                {% elif document.status == 'failed' %}
+                    <span class="badge bg-danger p-2 fs-6">Error</span>
+                {% else %}
+                    <span class="badge bg-secondary p-2 fs-6">En cola</span>
+                {% endif %}
+            </div>
+            
+            <div class="card-body p-4">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Fecha de subida:</dt>
+                    <dd class="col-sm-8">{{ document.created_at|date:"d/m/Y H:i" }}</dd>
+
+                    {% if document.message %}
+                    <dt class="col-sm-4 text-danger">Error del sistema:</dt>
+                    <dd class="col-sm-8 text-danger fw-bold">{{ document.message }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if document.status == 'completed' %}
+                <hr class="my-4">
+                <h5 class="fw-bold mb-3">Archivos Generados:</h5>
+                <div class="row g-3">
+                    <!-- Tarjeta PDF OCR -->
+                    <div class="col-md-6">
+                        <div class="card h-100 border-primary border-2">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger display-3"></i>
+                                <h5 class="mt-3 fw-bold">PDF con OCR</h5>
+                                <p class="text-muted small">El PDF original ahora tiene una capa de texto invisible que te permite buscar y copiar palabras.</p>
+                                <a href="{{ document.ocr_pdf.url }}" class="btn btn-primary w-100 py-2 fw-bold" download>
+                                    <i class="bi bi-download me-2"></i> Descargar PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tarjeta Word -->
+                    {% if document.ocr_text %}
+                    <div class="col-md-6">
+                        <div class="card h-100 border-info border-2">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-file-earmark-word-fill text-info display-3"></i>
+                                <h5 class="mt-3 fw-bold">Documento Word</h5>
+                                <p class="text-muted small">El texto extraído formateado en un documento de Microsoft Word editable.</p>
+                                <a href="{{ document.ocr_text.url }}" class="btn btn-info text-white w-100 py-2 fw-bold" download>
+                                    <i class="bi bi-download me-2"></i> Descargar DOCX
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% elif document.status == 'processing' %}
+                <div class="alert alert-info mt-4 d-flex align-items-center" role="alert">
+                    <i class="bi bi-hourglass-split fs-3 me-3"></i>
+                    <div>
+                        <strong>¡Trabajando en ello!</strong><br>
+                        El sistema está aplicando OCR a tu documento. Esta página no se actualiza automáticamente, por favor recarga en unos momentos para ver los resultados.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <a href="{% url 'document_list' %}" class="btn btn-outline-secondary mb-4">
+            <i class="bi bi-arrow-left"></i> Volver a la lista
+        </a>
+    </div>
+</div>
+{% endblock %}
