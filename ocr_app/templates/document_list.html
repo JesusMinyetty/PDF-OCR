@@ -42,7 +42,7 @@
                             {% if doc.status == 'completed' %}<i class="bi bi-check-circle-fill"></i> Completado
                             {% elif doc.status == 'processing' %}<span class="spinner-border spinner-border-sm me-1"></span> Procesando...
                             {% elif doc.status == 'failed' %}<i class="bi bi-x-circle-fill"></i> Fallido
-                            {% else %}En cola{% endif %}
+                            {% else %}<span class="spinner-border spinner-border-sm me-1"></span> En cola{% endif %}
                         </span>
                     </td>
                     <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
@@ -103,7 +103,7 @@
     };
 
     const labels = {
-        uploaded:   'En cola',
+        uploaded:   '<span class="spinner-border spinner-border-sm me-1"></span> En cola',
         processing: '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...',
         completed:  '<i class="bi bi-check-circle-fill"></i> Completado',
         failed:     '<i class="bi bi-x-circle-fill"></i> Fallido'

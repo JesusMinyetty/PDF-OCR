@@ -25,11 +25,11 @@
                     <dd class="col-sm-8 text-danger fw-bold {% if not document.message %}d-none{% endif %}" id="error-message">{{ document.message }}</dd>
                 </dl>
 
-                <!-- Alerta de procesamiento -->
+                <!-- Alerta de procesamiento (el icono gira mientras trabaja) -->
                 <div id="processing-alert"
                      class="alert alert-info mt-4 d-flex align-items-center {% if document.status != 'processing' and document.status != 'uploaded' %}d-none{% endif %}"
                      role="alert">
-                    <i class="bi bi-hourglass-split fs-3 me-3"></i>
+                    <i class="bi bi-hourglass-split fs-3 me-3 icon-spin"></i>
                     <div>
                         <strong>¡Trabajando en ello!</strong><br>
                         El sistema está aplicando OCR a tu documento. Esta página se actualizará <strong>sola</strong> cuando termine.
