@@ -3,11 +3,11 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-12 col-lg-8">
         <div class="card shadow-sm mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
-                <h4 class="mb-0 fw-bold text-truncate me-2">{{ document.original_pdf.name|cut:"pdfs/" }}</h4>
-                <span id="status-badge" class="badge p-2 fs-6
+            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom flex-wrap gap-2">
+                <h4 class="mb-0 fw-bold text-truncate flex-grow-1 me-2">{{ document.original_pdf.name|cut:"pdfs/" }}</h4>
+                <span id="status-badge" class="badge p-2 fs-6 flex-shrink-0
                     {% if document.status == 'completed' %}bg-success
                     {% elif document.status == 'processing' %}bg-warning text-dark
                     {% elif document.status == 'failed' %}bg-danger
@@ -17,7 +17,7 @@
                 </span>
             </div>
 
-            <div class="card-body p-4">
+            <div class="card-body p-3 p-md-4">
                 <dl class="row mb-0">
                     <dt class="col-sm-4 text-muted">Fecha de subida:</dt>
                     <dd class="col-sm-8">{{ document.created_at|date:"d/m/Y H:i" }}</dd>
@@ -29,7 +29,7 @@
                 <div id="processing-alert"
                      class="alert alert-info mt-4 d-flex align-items-center {% if document.status != 'processing' and document.status != 'uploaded' %}d-none{% endif %}"
                      role="alert">
-                    <i class="bi bi-hourglass-split fs-3 me-3 icon-spin"></i>
+                    <i class="bi bi-hourglass-split fs-3 me-3 icon-spin flex-shrink-0"></i>
                     <div>
                         <strong>¡Trabajando en ello!</strong><br>
                         El sistema está aplicando OCR a tu documento. Esta página se actualizará <strong>sola</strong> cuando termine.
@@ -41,7 +41,7 @@
                     <hr class="my-4">
                     <h5 class="fw-bold mb-3">Archivos Generados:</h5>
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <div class="card h-100 border-primary border-2">
                                 <div class="card-body text-center p-4">
                                     <i class="bi bi-file-earmark-pdf-fill text-danger display-3"></i>
@@ -53,7 +53,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6" id="docx-card">
+                        <div class="col-12 col-md-6" id="docx-card">
                             <div class="card h-100 border-info border-2">
                                 <div class="card-body text-center p-4">
                                     <i class="bi bi-file-earmark-word-fill text-info display-3"></i>
@@ -118,7 +118,7 @@
         currentStatus = data.status;
 
         // 1. Actualizar el badge de estado
-        badge.className = badgeStyles[data.status];
+        badge.className = badgeStyles[data.status] + ' flex-shrink-0';
         badge.innerHTML = badgeIcons[data.status] + badgeTexts[data.status];
 
         // 2. Mostrar u ocultar la alerta de procesamiento
@@ -151,7 +151,7 @@
             .then(function (data) {
                 if (data.status !== currentStatus) applyState(data);
                 if (data.status === 'completed' || data.status === 'failed') {
-                    clearInterval(interval); // Deja de consultar cuando termina
+                    clearInterval(interval);
                 }
             })
             .catch(function () { /* si falla una consulta, seguimos intentando */ });
