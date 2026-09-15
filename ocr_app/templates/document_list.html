@@ -22,7 +22,7 @@
             </thead>
             <tbody>
                 {% for doc in page_obj %}
-                <tr>
+                <tr data-doc-id="{{ doc.id }}">
                     <td class="ps-4">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-file-earmark-pdf-fill text-danger fs-2 me-3"></i>
@@ -33,21 +33,17 @@
                         </div>
                     </td>
                     <td>
-                        {% if doc.status == 'completed' %}
-                            <span class="status-badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-check-circle-fill"></i> Completado
-                            </span>
-                        {% elif doc.status == 'processing' %}
-                            <span class="status-badge bg-warning bg-opacity-10 text-warning">
-                                <span class="spinner-border spinner-border-sm me-1"></span> Procesando...
-                            </span>
-                        {% elif doc.status == 'failed' %}
-                            <span class="status-badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-x-circle-fill"></i> Fallido
-                            </span>
-                        {% else %}
-                            <span class="status-badge bg-secondary bg-opacity-10 text-secondary">En cola</span>
-                        {% endif %}
+                        <span class="status-badge js-status
+                            {% if doc.status == 'completed' %}bg-success bg-opacity-10 text-success
+                            {% elif doc.status == 'processing' %}bg-warning bg-opacity-10 text-warning
+                            {% elif doc.status == 'failed' %}bg-danger bg-opacity-10 text-danger
+                            {% else %}bg-secondary bg-opacity-10 text-secondary{% endif %}"
+                            data-status="{{ doc.status }}">
+                            {% if doc.status == 'completed' %}<i class="bi bi-check-circle-fill"></i> Completado
+                            {% elif doc.status == 'processing' %}<span class="spinner-border spinner-border-sm me-1"></span> Procesando...
+                            {% elif doc.status == 'failed' %}<i class="bi bi-x-circle-fill"></i> Fallido
+                            {% else %}En cola{% endif %}
+                        </span>
                     </td>
                     <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
                     <td class="text-end pe-4">
@@ -70,7 +66,7 @@
     </div>
 </div>
 
-<!-- Paginación moderna -->
+<!-- Paginación -->
 {% if page_obj.has_other_pages %}
 <nav class="mt-4">
     <ul class="pagination justify-content-center">
@@ -79,7 +75,7 @@
             <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
         </li>
         {% endif %}
-        
+
         <li class="page-item disabled">
             <span class="page-link bg-light border-0 text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
         </li>
@@ -92,4 +88,60 @@
     </ul>
 </nav>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const url = "{% url 'documents_status_bulk' %}";
+
+    const styles = {
+        uploaded:   'status-badge js-status bg-secondary bg-opacity-10 text-secondary',
+        processing: 'status-badge js-status bg-warning bg-opacity-10 text-warning',
+        completed:  'status-badge js-status bg-success bg-opacity-10 text-success',
+        failed:     'status-badge js-status bg-danger bg-opacity-10 text-danger'
+    };
+
+    const labels = {
+        uploaded:   'En cola',
+        processing: '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...',
+        completed:  '<i class="bi bi-check-circle-fill"></i> Completado',
+        failed:     '<i class="bi bi-x-circle-fill"></i> Fallido'
+    };
+
+    // Devuelve solo los badges que siguen pendientes (procesando o en cola)
+    function pendientes() {
+        return Array.from(document.querySelectorAll('.js-status'))
+            .filter(function (s) {
+                return s.dataset.status === 'processing' || s.dataset.status === 'uploaded';
+            });
+    }
+
+    // Si no hay nada pendiente, no iniciamos el polling
+    if (!pendientes().length) return;
+
+    const interval = setInterval(function () {
+        const badges = pendientes();
+        if (!badges.length) { clearInterval(interval); return; }
+
+        const ids = badges.map(function (b) {
+            return b.closest('tr').dataset.docId;
+        }).join(',');
+
+        fetch(url + '?ids=' + ids)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                data.documents.forEach(function (d) {
+                    const badge = document.querySelector('tr[data-doc-id="' + d.id + '"] .js-status');
+                    if (badge && badge.dataset.status !== d.status) {
+                        badge.dataset.status = d.status;
+                        badge.className = styles[d.status];
+                        badge.innerHTML = labels[d.status];
+                    }
+                });
+            })
+            .catch(function () { /* si falla una consulta, seguimos intentando */ });
+    }, 4000); // Consulta cada 4 segundos
+})();
+</script>
 {% endblock %}

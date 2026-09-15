@@ -7,79 +7,155 @@
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
                 <h4 class="mb-0 fw-bold text-truncate me-2">{{ document.original_pdf.name|cut:"pdfs/" }}</h4>
-                {% if document.status == 'completed' %}
-                    <span class="badge bg-success p-2 fs-6">Listo</span>
-                {% elif document.status == 'processing' %}
-                    <span class="badge bg-warning text-dark p-2 fs-6">
-                        <span class="spinner-border spinner-border-sm"></span> Procesando...
-                    </span>
-                {% elif document.status == 'failed' %}
-                    <span class="badge bg-danger p-2 fs-6">Error</span>
-                {% else %}
-                    <span class="badge bg-secondary p-2 fs-6">En cola</span>
-                {% endif %}
+                <span id="status-badge" class="badge p-2 fs-6
+                    {% if document.status == 'completed' %}bg-success
+                    {% elif document.status == 'processing' %}bg-warning text-dark
+                    {% elif document.status == 'failed' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {% if document.status == 'processing' %}<span class="spinner-border spinner-border-sm"></span> {% endif %}
+                    {{ document.get_status_display }}
+                </span>
             </div>
-            
+
             <div class="card-body p-4">
                 <dl class="row mb-0">
                     <dt class="col-sm-4 text-muted">Fecha de subida:</dt>
                     <dd class="col-sm-8">{{ document.created_at|date:"d/m/Y H:i" }}</dd>
-
-                    {% if document.message %}
-                    <dt class="col-sm-4 text-danger">Error del sistema:</dt>
-                    <dd class="col-sm-8 text-danger fw-bold">{{ document.message }}</dd>
-                    {% endif %}
+                    <dt class="col-sm-4 text-danger {% if not document.message %}d-none{% endif %}" id="error-label">Error del sistema:</dt>
+                    <dd class="col-sm-8 text-danger fw-bold {% if not document.message %}d-none{% endif %}" id="error-message">{{ document.message }}</dd>
                 </dl>
 
-                {% if document.status == 'completed' %}
-                <hr class="my-4">
-                <h5 class="fw-bold mb-3">Archivos Generados:</h5>
-                <div class="row g-3">
-                    <!-- Tarjeta PDF OCR -->
-                    <div class="col-md-6">
-                        <div class="card h-100 border-primary border-2">
-                            <div class="card-body text-center p-4">
-                                <i class="bi bi-file-earmark-pdf-fill text-danger display-3"></i>
-                                <h5 class="mt-3 fw-bold">PDF con OCR</h5>
-                                <p class="text-muted small">El PDF original ahora tiene una capa de texto invisible que te permite buscar y copiar palabras.</p>
-                                <a href="{{ document.ocr_pdf.url }}" class="btn btn-primary w-100 py-2 fw-bold" download>
-                                    <i class="bi bi-download me-2"></i> Descargar PDF
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tarjeta Word -->
-                    {% if document.ocr_text %}
-                    <div class="col-md-6">
-                        <div class="card h-100 border-info border-2">
-                            <div class="card-body text-center p-4">
-                                <i class="bi bi-file-earmark-word-fill text-info display-3"></i>
-                                <h5 class="mt-3 fw-bold">Documento Word</h5>
-                                <p class="text-muted small">El texto extraído formateado en un documento de Microsoft Word editable.</p>
-                                <a href="{{ document.ocr_text.url }}" class="btn btn-info text-white w-100 py-2 fw-bold" download>
-                                    <i class="bi bi-download me-2"></i> Descargar DOCX
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% elif document.status == 'processing' %}
-                <div class="alert alert-info mt-4 d-flex align-items-center" role="alert">
+                <!-- Alerta de procesamiento -->
+                <div id="processing-alert"
+                     class="alert alert-info mt-4 d-flex align-items-center {% if document.status != 'processing' and document.status != 'uploaded' %}d-none{% endif %}"
+                     role="alert">
                     <i class="bi bi-hourglass-split fs-3 me-3"></i>
                     <div>
                         <strong>¡Trabajando en ello!</strong><br>
-                        El sistema está aplicando OCR a tu documento. Esta página no se actualiza automáticamente, por favor recarga en unos momentos para ver los resultados.
+                        El sistema está aplicando OCR a tu documento. Esta página se actualizará <strong>sola</strong> cuando termine.
                     </div>
                 </div>
-                {% endif %}
+
+                <!-- Resultados (ocultos hasta que esté completado) -->
+                <div id="results-section" class="{% if document.status != 'completed' %}d-none{% endif %}">
+                    <hr class="my-4">
+                    <h5 class="fw-bold mb-3">Archivos Generados:</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary border-2">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger display-3"></i>
+                                    <h5 class="mt-3 fw-bold">PDF con OCR</h5>
+                                    <p class="text-muted small">El PDF original ahora tiene una capa de texto invisible que te permite buscar y copiar palabras.</p>
+                                    <a id="download-pdf" href="{% if document.ocr_pdf %}{{ document.ocr_pdf.url }}{% else %}#{% endif %}" class="btn btn-primary w-100 py-2 fw-bold" download>
+                                        <i class="bi bi-download me-2"></i> Descargar PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="docx-card">
+                            <div class="card h-100 border-info border-2">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-file-earmark-word-fill text-info display-3"></i>
+                                    <h5 class="mt-3 fw-bold">Documento Word</h5>
+                                    <p class="text-muted small">El texto extraído formateado en un documento de Microsoft Word editable.</p>
+                                    <a id="download-docx" href="{% if document.ocr_text %}{{ document.ocr_text.url }}{% else %}#{% endif %}" class="btn btn-info text-white w-100 py-2 fw-bold" download>
+                                        <i class="bi bi-download me-2"></i> Descargar DOCX
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        
+
         <a href="{% url 'document_list' %}" class="btn btn-outline-secondary mb-4">
             <i class="bi bi-arrow-left"></i> Volver a la lista
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    let currentStatus = "{{ document.status }}";
+    const statusUrl = "{% url 'document_status' pk=document.pk %}";
+
+    // Si el documento ya terminó, no hace falta consultar nada
+    if (currentStatus === 'completed' || currentStatus === 'failed') return;
+
+    const badge = document.getElementById('status-badge');
+    const processingAlert = document.getElementById('processing-alert');
+    const resultsSection = document.getElementById('results-section');
+    const downloadPdf = document.getElementById('download-pdf');
+    const downloadDocx = document.getElementById('download-docx');
+    const docxCard = document.getElementById('docx-card');
+    const errorLabel = document.getElementById('error-label');
+    const errorMessage = document.getElementById('error-message');
+
+    const badgeStyles = {
+        uploaded:   'badge p-2 fs-6 bg-secondary',
+        processing: 'badge p-2 fs-6 bg-warning text-dark',
+        completed:  'badge p-2 fs-6 bg-success',
+        failed:     'badge p-2 fs-6 bg-danger'
+    };
+    const badgeIcons = {
+        uploaded:   '',
+        processing: '<span class="spinner-border spinner-border-sm"></span> ',
+        completed:  '<i class="bi bi-check-circle-fill"></i> ',
+        failed:     '<i class="bi bi-x-circle-fill"></i> '
+    };
+    const badgeTexts = {
+        uploaded:   'En cola',
+        processing: 'Procesando...',
+        completed:  '¡Completado!',
+        failed:     'Fallido'
+    };
+
+    function applyState(data) {
+        currentStatus = data.status;
+
+        // 1. Actualizar el badge de estado
+        badge.className = badgeStyles[data.status];
+        badge.innerHTML = badgeIcons[data.status] + badgeTexts[data.status];
+
+        // 2. Mostrar u ocultar la alerta de procesamiento
+        if (data.status === 'processing' || data.status === 'uploaded') {
+            processingAlert.classList.remove('d-none');
+        } else {
+            processingAlert.classList.add('d-none');
+        }
+
+        // 3. Mostrar resultados o el mensaje de error
+        if (data.status === 'completed') {
+            resultsSection.classList.remove('d-none');
+            if (data.ocr_pdf_url) downloadPdf.href = data.ocr_pdf_url;
+            if (data.ocr_text_url) {
+                downloadDocx.href = data.ocr_text_url;
+            } else {
+                docxCard.classList.add('d-none');
+            }
+        } else if (data.status === 'failed') {
+            errorLabel.classList.remove('d-none');
+            errorMessage.classList.remove('d-none');
+            errorMessage.textContent = data.message || 'Error desconocido durante el procesamiento.';
+        }
+    }
+
+    // 4. Consultar el estado cada 3 segundos
+    const interval = setInterval(function () {
+        fetch(statusUrl)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.status !== currentStatus) applyState(data);
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(interval); // Deja de consultar cuando termina
+                }
+            })
+            .catch(function () { /* si falla una consulta, seguimos intentando */ });
+    }, 3000);
+})();
+</script>
 {% endblock %}

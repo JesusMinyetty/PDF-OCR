@@ -1,4 +1,5 @@
 import logging
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from .models import PDFDocument
@@ -31,3 +32,23 @@ def document_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     return render(request, 'document_list.html', {'page_obj': page_obj})
+
+def document_status(request, pk):
+    """Endpoint JSON para consultar el estado de un documento en tiempo real (AJAX)."""
+    document = get_object_or_404(PDFDocument, pk=pk)
+    return JsonResponse({
+        'id': document.id,
+        'status': document.status,
+        'status_display': document.get_status_display(),
+        'message': document.message or '',
+        'ocr_pdf_url': document.ocr_pdf.url if document.ocr_pdf else None,
+        'ocr_text_url': document.ocr_text.url if document.ocr_text else None,
+    })
+
+
+def documents_status_bulk(request):
+    """Endpoint JSON para consultar el estado de varios documentos a la vez (para la lista)."""
+    ids = request.GET.get('ids', '')
+    id_list = [int(i) for i in ids.split(',') if i.strip().isdigit()]
+    docs = PDFDocument.objects.filter(id__in=id_list).values('id', 'status')
+    return JsonResponse({'documents': list(docs)})

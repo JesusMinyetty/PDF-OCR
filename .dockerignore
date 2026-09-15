@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Entornos virtuales
+my_entorno/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bases de datos locales
+db.sqlite3
+dump.rdb
+
+# Archivos multimedia
+media/
+
+# IDEs
+.vscode/
+.idea/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
